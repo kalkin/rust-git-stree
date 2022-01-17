@@ -6,7 +6,7 @@ edition = "2018"
 keywords = ["git"]
 license = "LGPL-3.0-or-later"
 name = "git-stree"
-repository = "https://github.com/kalkin/rust-gsi"
+repository = "https://github.com/kalkin/rust-git-stree"
 version = "0.2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
