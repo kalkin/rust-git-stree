@@ -14,8 +14,8 @@ version = "0.2.1"
 [dependencies]
 getset = "0.1.*"
 configparser = "3"
-git-wrapper = { path = "../git-wrapper/", version = "0.5.*" }
-posix-errors = { path = "../posix-errors", version = "1" }
+git-wrapper = "0.5.*"
+posix-errors = "1"
 lenient_semver = "^0.4"
 regex = "1"
 semver = "1"
