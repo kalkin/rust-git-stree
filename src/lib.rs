@@ -238,14 +238,12 @@ pub enum SubtreesError {
 impl From<RepoError> for SubtreesError {
     fn from(err: RepoError) -> Self {
         match err {
-            RepoError::GitDirNotFound => SubtreesError::RepoNotFound,
+            RepoError::GitDirNotFound => Self::RepoNotFound,
             RepoError::InvalidDirectory(p) | RepoError::AbsolutionError(p) => {
                 let msg = format!("Failed to handle directory {:?}", p);
-                SubtreesError::InvalidDirectory(msg)
+                Self::InvalidDirectory(msg)
             }
-            RepoError::FailAccessCwd => {
-                SubtreesError::InvalidDirectory("Failed to access CWD".to_string())
-            }
+            RepoError::FailAccessCwd => Self::InvalidDirectory("Failed to access CWD".to_string()),
         }
     }
 }
@@ -254,7 +252,7 @@ impl From<ConfigError> for SubtreesError {
     fn from(err: ConfigError) -> Self {
         match err {
             ConfigError::ParseFailed(path_buf) | ConfigError::ReadFailed(path_buf) => {
-                SubtreesError::InvalidConfig(path_buf.to_string_lossy().to_string())
+                Self::InvalidConfig(path_buf.to_string_lossy().to_string())
             }
         }
     }
@@ -280,9 +278,9 @@ pub enum AdditionError {
 impl From<SubtreeAddError> for AdditionError {
     fn from(err: SubtreeAddError) -> Self {
         match err {
-            SubtreeAddError::BareRepository => AdditionError::BareRepository,
-            SubtreeAddError::Failure(msg, code) => AdditionError::Failure(msg, code),
-            SubtreeAddError::WorkTreeDirty => AdditionError::WorkTreeDirty,
+            SubtreeAddError::BareRepository => Self::BareRepository,
+            SubtreeAddError::Failure(msg, code) => Self::Failure(msg, code),
+            SubtreeAddError::WorkTreeDirty => Self::WorkTreeDirty,
         }
     }
 }
@@ -292,13 +290,13 @@ impl From<ConfigSetError> for AdditionError {
         match err {
             ConfigSetError::InvalidConfigFile(f) => {
                 let msg = format!("Invalid config file: {}", f);
-                AdditionError::WriteConfig(msg)
+                Self::WriteConfig(msg)
             }
             ConfigSetError::WriteFailed(f) => {
                 let msg = format!("Failed to write config file: {}", f);
-                AdditionError::WriteConfig(msg)
+                Self::WriteConfig(msg)
             }
-            ConfigSetError::InvalidSectionOrKey(msg) => AdditionError::WriteConfig(msg),
+            ConfigSetError::InvalidSectionOrKey(msg) => Self::WriteConfig(msg),
         }
     }
 }
@@ -315,8 +313,8 @@ pub enum FindError {
 impl From<ConfigError> for FindError {
     fn from(err: ConfigError) -> Self {
         match err {
-            ConfigError::ReadFailed(p) => FindError::ReadFailed(p),
-            ConfigError::ParseFailed(p) => FindError::ParseFailed(p),
+            ConfigError::ReadFailed(p) => Self::ReadFailed(p),
+            ConfigError::ParseFailed(p) => Self::ParseFailed(p),
         }
     }
 }
@@ -338,27 +336,27 @@ impl From<RefSearchError> for PullError {
     fn from(prev: RefSearchError) -> Self {
         match prev {
             RefSearchError::ParsingFailure(msg) | RefSearchError::Failure(msg) => {
-                PullError::Failure(msg)
+                Self::Failure(msg)
             }
-            RefSearchError::UTF8Decode(err) => PullError::UTF8Decode(err),
-            RefSearchError::IOError(err) => PullError::IOError(err),
-            RefSearchError::NotFound => PullError::ReferenceNotFound,
+            RefSearchError::UTF8Decode(err) => Self::UTF8Decode(err),
+            RefSearchError::IOError(err) => Self::IOError(err),
+            RefSearchError::NotFound => Self::ReferenceNotFound,
         }
     }
 }
 
 impl From<InvalidRefError> for PullError {
     fn from(_prev: InvalidRefError) -> Self {
-        PullError::InvalidReference
+        Self::InvalidReference
     }
 }
 
 impl From<SubtreePullError> for PullError {
     fn from(prev: SubtreePullError) -> Self {
         match prev {
-            SubtreePullError::Failure(msg, _) => PullError::Failure(msg),
-            SubtreePullError::BareRepository => PullError::BareRepository,
-            SubtreePullError::WorkTreeDirty => PullError::WorkTreeDirty,
+            SubtreePullError::Failure(msg, _) => Self::Failure(msg),
+            SubtreePullError::BareRepository => Self::BareRepository,
+            SubtreePullError::WorkTreeDirty => Self::WorkTreeDirty,
         }
     }
 }
@@ -374,8 +372,8 @@ pub enum PushError {
 impl From<SubtreePushError> for PushError {
     fn from(prev: SubtreePushError) -> Self {
         match prev {
-            SubtreePushError::Failure(msg, _) => PushError::Failure(msg),
-            SubtreePushError::BareRepository => PushError::BareRepository,
+            SubtreePushError::Failure(msg, _) => Self::Failure(msg),
+            SubtreePushError::BareRepository => Self::BareRepository,
         }
     }
 }
@@ -391,9 +389,9 @@ pub enum SplitError {
 impl From<SubtreeSplitError> for SplitError {
     fn from(prev: SubtreeSplitError) -> Self {
         match prev {
-            SubtreeSplitError::Failure(msg, _) => SplitError::Failure(msg),
-            SubtreeSplitError::BareRepository => SplitError::BareRepository,
-            SubtreeSplitError::WorkTreeDirty => SplitError::WorkTreeDirty,
+            SubtreeSplitError::Failure(msg, _) => Self::Failure(msg),
+            SubtreeSplitError::BareRepository => Self::BareRepository,
+            SubtreeSplitError::WorkTreeDirty => Self::WorkTreeDirty,
         }
     }
 }
