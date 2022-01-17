@@ -1,0 +1,25 @@
+[package]
+authors = ["Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>"]
+categories = ["development-tools"]
+description = "Library for working with my improved git subtree schema"
+edition = "2018"
+keywords = ["git"]
+license = "LGPL-3.0-or-later"
+name = "git-stree"
+repository = "https://github.com/kalkin/rust-gsi"
+version = "0.2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+getset = "0.1.*"
+configparser = "3"
+git-wrapper = { path = "../git-wrapper/", version = "0.5.*" }
+posix-errors = { path = "../posix-errors", version = "1" }
+lenient_semver = "^0.4"
+regex = "1"
+semver = "1"
+lazy_static = "1.4"
+
+[dev-dependencies]
+tempdir = "0.3.*"
