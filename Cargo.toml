@@ -2,7 +2,7 @@
 authors = ["Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>"]
 categories = ["development-tools"]
 description = "Library for working with my improved git subtree schema"
-edition = "2018"
+edition = "2021"
 keywords = ["git"]
 license = "LGPL-3.0-or-later"
 name = "git-stree"
