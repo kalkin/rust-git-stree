@@ -575,7 +575,12 @@ git-subtree-remote-ref: {}",
             return Err(PushError::NoUpstream);
         }
 
-        Ok(self.repo.subtree_push(remote, prefix, git_ref)?)
+        if git_ref == "HEAD" {
+            let git_ref = git_wrapper::resolve_head(remote).expect("asd");
+            Ok(self.repo.subtree_push(remote, prefix, &git_ref)?)
+        } else {
+            Ok(self.repo.subtree_push(remote, prefix, git_ref)?)
+        }
     }
 
     pub fn changed_modules(&self, id: &str) -> Result<Vec<SubtreeConfig>, ConfigError> {
