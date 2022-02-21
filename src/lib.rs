@@ -716,7 +716,6 @@ fn all(repo: &Repository) -> Result<Vec<SubtreeConfig>, ConfigError> {
     Ok(result)
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod test {
     use crate::SubtreeConfig;
