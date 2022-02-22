@@ -221,13 +221,16 @@ pub fn find_latest_version_matching(
         } else {
         }
     }
-    if let Some(v) = latest {
-        let result = versions_map.get(v);
-        Ok(result.expect("Version is in version map").clone())
-    } else {
-        let msg = format!("Failed to find a tag matching {}", range);
-        Err(PosixError::new(ENOENT, msg))
-    }
+    latest.map_or_else(
+        || {
+            let msg = format!("Failed to find a tag matching {}", range);
+            Err(PosixError::new(ENOENT, msg))
+        },
+        |v| {
+            let result = versions_map.get(v);
+            Ok(result.expect("Version is in version map").clone())
+        },
+    )
 }
 
 /// Manages subtrees in a repository
