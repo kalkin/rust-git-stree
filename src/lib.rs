@@ -495,7 +495,7 @@ git-subtree-remote-ref: {}",
         self.repo.head()
     }
 
-    fn persist(&self, subtree: &SubtreeConfig) -> Result<(), git_wrapper::ConfigSetError> {
+    fn persist(&self, subtree: &SubtreeConfig) -> Result<(), ConfigSetError> {
         let root = self.repo.work_tree().expect("Repo without work_tree");
         let file = root.join(subtree.config_file());
         let section = subtree.name();
@@ -645,7 +645,7 @@ git-subtree-remote-ref: {}",
 fn configs_from_path(
     repo: &Repository,
     parser: &mut Ini,
-    path: &std::path::Path,
+    path: &Path,
 ) -> Result<Vec<SubtreeConfig>, ConfigError> {
     let content;
     match repo.hack_read_file(path) {
