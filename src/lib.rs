@@ -50,7 +50,7 @@ pub struct SubtreeConfig {
 impl SubtreeConfig {
     #[must_use]
     #[inline]
-    pub fn new(
+    pub const fn new(
         id: String,
         follow: Option<String>,
         origin: Option<String>,
@@ -68,14 +68,14 @@ impl SubtreeConfig {
     /// Return `true` if upstream is set
     #[must_use]
     #[inline]
-    pub fn is_pullable(&self) -> bool {
+    pub const fn is_pullable(&self) -> bool {
         self.upstream.is_some()
     }
 
     /// Return `true` if origin is set
     #[must_use]
     #[inline]
-    pub fn is_pushable(&self) -> bool {
+    pub const fn is_pushable(&self) -> bool {
         self.origin.is_some()
     }
 
