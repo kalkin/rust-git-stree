@@ -471,7 +471,7 @@ impl Subtrees {
         revision: Option<&str>,
         subject: Option<&str>,
     ) -> Result<(), AdditionError> {
-        if let Some(revision) = revision {
+        if let Some(rev) = revision {
             let remote = subtree.upstream.as_ref().unwrap();
             let target = subtree.id();
 
@@ -484,9 +484,9 @@ impl Subtrees {
 
 git-subtree-origin: {}
 git-subtree-remote-ref: {}",
-                subject, remote, revision
+                subject, remote, rev
             );
-            self.repo.subtree_add(remote, target, revision, &msg)?;
+            self.repo.subtree_add(remote, target, rev, &msg)?;
         }
         self.persist(subtree)?;
         let mut cmd = self.repo.git();
@@ -497,10 +497,10 @@ git-subtree-remote-ref: {}",
             return Err(AdditionError::WriteConfig(msg));
         }
 
-        let mut cmd = self.repo.git();
-        cmd.args(&["commit", "--amend", "--no-edit"]);
-        let out = cmd.output().expect("Failed to execute git-commit(1)");
-        if !out.status.success() {
+        let mut cmd2 = self.repo.git();
+        cmd2.args(&["commit", "--amend", "--no-edit"]);
+        let out2 = cmd2.output().expect("Failed to execute git-commit(1)");
+        if !out2.status.success() {
             let msg = String::from_utf8_lossy(&out.stderr).to_string();
             return Err(AdditionError::WriteConfig(msg));
         }
@@ -605,8 +605,8 @@ git-subtree-remote-ref: {}",
         }
 
         if git_ref == "HEAD" {
-            let git_ref = git_wrapper::resolve_head(remote).expect("asd");
-            Ok(self.repo.subtree_push(remote, prefix, &git_ref)?)
+            let head = git_wrapper::resolve_head(remote).expect("asd");
+            Ok(self.repo.subtree_push(remote, prefix, &head)?)
         } else {
             Ok(self.repo.subtree_push(remote, prefix, git_ref)?)
         }
