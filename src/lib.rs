@@ -49,6 +49,7 @@ pub struct SubtreeConfig {
 
 impl SubtreeConfig {
     #[must_use]
+    #[inline]
     pub fn new(
         id: String,
         follow: Option<String>,
@@ -66,17 +67,20 @@ impl SubtreeConfig {
     }
     /// Return `true` if upstream is set
     #[must_use]
+    #[inline]
     pub fn is_pullable(&self) -> bool {
         self.upstream.is_some()
     }
 
     /// Return `true` if origin is set
     #[must_use]
+    #[inline]
     pub fn is_pushable(&self) -> bool {
         self.origin.is_some()
     }
 
     #[must_use]
+    #[inline]
     pub fn config_file(&self) -> String {
         let mut result = self
             .id
@@ -87,6 +91,7 @@ impl SubtreeConfig {
     }
 
     #[must_use]
+    #[inline]
     pub fn name(&self) -> String {
         self.id()
             .rsplit_once('/')
@@ -102,6 +107,7 @@ impl SubtreeConfig {
     /// # Errors
     ///
     /// Will return a [`PosixError`] when fails to find a ref to pull
+    #[inline]
     pub fn ref_to_pull(&self) -> Result<String, PosixError> {
         if !self.is_pullable() {
             panic!("Subtree does not have upstream remote defined");
@@ -129,6 +135,7 @@ impl SubtreeConfig {
 
 /// Aliases some well known urls to their initials.
 #[must_use]
+#[inline]
 pub fn alias_url(url: &str) -> String {
     let github = regex::Regex::new(r"^(git@github.com:|.+://github.com/)").expect("Valid RegEx");
     let gitlab = regex::Regex::new(r"^(git@gitlab.com:|.+://gitlab.com/)").expect("Valid RegEx");
@@ -165,6 +172,7 @@ fn versions_from_remote(url: &str) -> Result<HashMap<semver::Version, String>, P
 /// # Errors
 ///
 /// Will return [`PosixError`] if command exits if no versions found.
+#[inline]
 pub fn find_latest_version(remote: &str) -> Result<String, PosixError> {
     let versions = versions_from_remote(remote)?;
     if versions.is_empty() {
@@ -186,6 +194,7 @@ pub fn find_latest_version(remote: &str) -> Result<String, PosixError> {
 /// # Errors
 ///
 /// Will return [`PosixError`] if command exits if fails to find matching version.
+#[inline]
 pub fn find_latest_version_matching(
     remote: &str,
     range: &semver::VersionReq,
@@ -236,6 +245,7 @@ pub enum SubtreesError {
 }
 
 impl From<RepoError> for SubtreesError {
+    #[inline]
     fn from(err: RepoError) -> Self {
         match err {
             RepoError::GitDirNotFound => Self::RepoNotFound,
@@ -249,6 +259,7 @@ impl From<RepoError> for SubtreesError {
 }
 
 impl From<ConfigError> for SubtreesError {
+    #[inline]
     fn from(err: ConfigError) -> Self {
         match err {
             ConfigError::ParseFailed(path_buf) | ConfigError::ReadFailed(path_buf) => {
@@ -276,6 +287,7 @@ pub enum AdditionError {
 }
 
 impl From<SubtreeAddError> for AdditionError {
+    #[inline]
     fn from(err: SubtreeAddError) -> Self {
         match err {
             SubtreeAddError::BareRepository => Self::BareRepository,
@@ -286,6 +298,7 @@ impl From<SubtreeAddError> for AdditionError {
 }
 
 impl From<ConfigSetError> for AdditionError {
+    #[inline]
     fn from(err: ConfigSetError) -> Self {
         match err {
             ConfigSetError::InvalidConfigFile(f) => {
@@ -311,6 +324,7 @@ pub enum FindError {
 }
 
 impl From<ConfigError> for FindError {
+    #[inline]
     fn from(err: ConfigError) -> Self {
         match err {
             ConfigError::ReadFailed(p) => Self::ReadFailed(p),
@@ -333,6 +347,7 @@ pub enum PullError {
 }
 
 impl From<RefSearchError> for PullError {
+    #[inline]
     fn from(prev: RefSearchError) -> Self {
         match prev {
             RefSearchError::ParsingFailure(msg) | RefSearchError::Failure(msg) => {
@@ -346,12 +361,14 @@ impl From<RefSearchError> for PullError {
 }
 
 impl From<InvalidRefError> for PullError {
+    #[inline]
     fn from(_prev: InvalidRefError) -> Self {
         Self::InvalidReference
     }
 }
 
 impl From<SubtreePullError> for PullError {
+    #[inline]
     fn from(prev: SubtreePullError) -> Self {
         match prev {
             SubtreePullError::Failure(msg, _) => Self::Failure(msg),
@@ -370,6 +387,7 @@ pub enum PushError {
 }
 
 impl From<SubtreePushError> for PushError {
+    #[inline]
     fn from(prev: SubtreePushError) -> Self {
         match prev {
             SubtreePushError::Failure(msg, _) => Self::Failure(msg),
@@ -387,6 +405,7 @@ pub enum SplitError {
 }
 
 impl From<SubtreeSplitError> for SplitError {
+    #[inline]
     fn from(prev: SubtreeSplitError) -> Self {
         match prev {
             SubtreeSplitError::Failure(msg, _) => Self::Failure(msg),
@@ -398,6 +417,7 @@ impl From<SubtreeSplitError> for SplitError {
 
 #[cfg(not(tarpaulin_include))]
 impl std::fmt::Display for ConfigError {
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ConfigError::ParseFailed(p) => {
@@ -417,17 +437,20 @@ impl Subtrees {
     /// # Errors
     ///
     /// Throws [`SubtreesError`] if fails to find or access repository.
+    #[inline]
     pub fn new() -> Result<Self, SubtreesError> {
         let repo = Repository::default()?;
         let configs = all(&repo)?;
         Ok(Self { repo, configs })
     }
 
+    #[inline]
     pub fn from_repo(repo: Repository) -> Result<Self, SubtreesError> {
         let configs = all(&repo)?;
         Ok(Self { repo, configs })
     }
 
+    #[inline]
     pub fn from_dir(path: &Path) -> Result<Self, SubtreesError> {
         let repo = Repository::discover(path)?;
         let configs = all(&repo)?;
@@ -441,6 +464,7 @@ impl Subtrees {
     /// # Panics
     ///
     /// Panics when something unexpected happens
+    #[inline]
     pub fn add(
         &self,
         subtree: &SubtreeConfig,
@@ -486,11 +510,13 @@ git-subtree-remote-ref: {}",
     /// # Errors
     ///
     /// Throws [`ConfigError`] if something goes wrong during parsing
+    #[inline]
     pub fn all(&self) -> Result<Vec<SubtreeConfig>, ConfigError> {
         Ok(self.configs.clone())
     }
 
     #[must_use]
+    #[inline]
     pub fn head(&self) -> Option<String> {
         self.repo.head()
     }
@@ -532,6 +558,7 @@ git-subtree-remote-ref: {}",
         Ok(())
     }
 
+    #[inline]
     pub fn pull(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<String, PullError> {
         let prefix = subtree.id();
         let remote;
@@ -561,11 +588,13 @@ git-subtree-remote-ref: {}",
         }
     }
 
+    #[inline]
     pub fn split(&self, subtree: &SubtreeConfig) -> Result<(), SplitError> {
         let prefix = subtree.id();
         Ok(self.repo.subtree_split(prefix)?)
     }
 
+    #[inline]
     pub fn push(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<(), PushError> {
         let prefix = subtree.id();
         let remote;
@@ -583,6 +612,7 @@ git-subtree-remote-ref: {}",
         }
     }
 
+    #[inline]
     pub fn changed_modules(&self, id: &str) -> Result<Vec<SubtreeConfig>, ConfigError> {
         let subtree_modules = self.all()?;
         if subtree_modules.is_empty() {
@@ -627,6 +657,7 @@ git-subtree-remote-ref: {}",
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[inline]
     pub fn find_subtree(&self, needle: &str) -> Result<SubtreeConfig, FindError> {
         if self.repo.is_bare() {
             return Err(FindError::BareRepository);
