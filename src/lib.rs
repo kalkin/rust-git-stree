@@ -95,7 +95,7 @@ impl SubtreeConfig {
     pub fn name(&self) -> String {
         self.id()
             .rsplit_once('/')
-            .map_or_else(|| self.id.to_string(), |x| x.1.to_owned())
+            .map_or_else(|| self.id.clone(), |x| x.1.to_owned())
     }
 
     /// Figure out which named ref to pull from.
