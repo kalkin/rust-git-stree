@@ -475,7 +475,7 @@ impl Subtrees {
             let remote = subtree.upstream.as_ref().unwrap();
             let target = subtree.id();
 
-            let subject = subject.map_or_else(
+            let title = subject.map_or_else(
                 || format!(":{} Import {}", target, alias_url(remote)),
                 |v| format!(":{} {}", target, v),
             );
@@ -484,7 +484,7 @@ impl Subtrees {
 
 git-subtree-origin: {}
 git-subtree-remote-ref: {}",
-                subject, remote, rev
+                title, remote, rev
             );
             self.repo.subtree_add(remote, target, rev, &msg)?;
         }
