@@ -85,7 +85,7 @@ impl SubtreeConfig {
         let mut result = self
             .id
             .rsplit_once('/')
-            .map_or_else(|| "".to_string(), |x| x.1.to_string());
+            .map_or_else(|| "".to_owned(), |x| x.1.to_owned());
         result.push_str(".gitsubtrees");
         result
     }
@@ -95,7 +95,7 @@ impl SubtreeConfig {
     pub fn name(&self) -> String {
         self.id()
             .rsplit_once('/')
-            .map_or_else(|| self.id.to_string(), |x| x.1.to_string())
+            .map_or_else(|| self.id.to_string(), |x| x.1.to_owned())
     }
 
     /// Figure out which named ref to pull from.
@@ -112,7 +112,7 @@ impl SubtreeConfig {
         if !self.is_pullable() {
             panic!("Subtree does not have upstream remote defined");
         }
-        let candidate = self.follow.clone().unwrap_or_else(|| "HEAD".to_string());
+        let candidate = self.follow.clone().unwrap_or_else(|| "HEAD".to_owned());
         let remote = &self.upstream.clone().unwrap();
         let follow = if candidate == *"@{tags}" {
             find_latest_version(remote)?
@@ -150,7 +150,7 @@ pub fn alias_url(url: &str) -> String {
     if bitbucket.is_match(url) {
         return bitbucket.replace(url, "BB:").to_string();
     }
-    url.to_string()
+    url.to_owned()
 }
 
 fn versions_from_remote(url: &str) -> Result<HashMap<semver::Version, String>, PosixError> {
@@ -176,7 +176,7 @@ fn versions_from_remote(url: &str) -> Result<HashMap<semver::Version, String>, P
 pub fn find_latest_version(remote: &str) -> Result<String, PosixError> {
     let versions = versions_from_remote(remote)?;
     if versions.is_empty() {
-        let message = "Failed to find any valid tags".to_string();
+        let message = "Failed to find any valid tags".to_owned();
         return Err(PosixError::new(ENOENT, message));
     }
 
@@ -253,7 +253,7 @@ impl From<RepoError> for SubtreesError {
                 let msg = format!("Failed to handle directory {:?}", p);
                 Self::InvalidDirectory(msg)
             }
-            RepoError::FailAccessCwd => Self::InvalidDirectory("Failed to access CWD".to_string()),
+            RepoError::FailAccessCwd => Self::InvalidDirectory("Failed to access CWD".to_owned()),
         }
     }
 }
@@ -581,10 +581,10 @@ git-subtree-remote-ref: {}",
             Ok(String::from_utf8(out.stdout)
                 .expect("UTF-8 encoding")
                 .trim()
-                .to_string())
+                .to_owned())
         } else {
             eprintln!("Failed to execute git rev-parse");
-            Ok(git_ref.to_string())
+            Ok(git_ref.to_owned())
         }
     }
 
@@ -669,7 +669,7 @@ git-subtree-remote-ref: {}",
                 return Ok(c);
             }
         }
-        Err(FindError::NotFound(needle.to_string()))
+        Err(FindError::NotFound(needle.to_owned()))
     }
 }
 
@@ -696,7 +696,7 @@ fn configs_from_path(
                 .join(name)
                 .to_str()
                 .expect("Convertable to str")
-                .to_string();
+                .to_owned();
         } else {
             id = name.clone();
         }
