@@ -48,6 +48,7 @@ pub struct SubtreeConfig {
 }
 
 impl SubtreeConfig {
+    /// Return a new instance
     #[must_use]
     #[inline]
     pub const fn new(
@@ -79,6 +80,7 @@ impl SubtreeConfig {
         self.origin.is_some()
     }
 
+    /// Return path to config file
     #[must_use]
     #[inline]
     pub fn config_file(&self) -> String {
@@ -90,6 +92,7 @@ impl SubtreeConfig {
         result
     }
 
+    /// Subtree name
     #[must_use]
     #[inline]
     pub fn name(&self) -> String {
@@ -241,6 +244,7 @@ pub struct Subtrees {
 }
 
 /// Failed to initialize `Subtrees`
+#[allow(missing_docs)]
 #[derive(Debug, PartialEq)]
 pub enum SubtreesError {
     RepoNotFound,
@@ -274,6 +278,7 @@ impl From<ConfigError> for SubtreesError {
 }
 
 /// Failed reading or parsing a `.gitsubtrees` file.
+#[allow(missing_docs)]
 #[derive(Debug, PartialEq)]
 pub enum ConfigError {
     ReadFailed(PathBuf),
@@ -281,6 +286,7 @@ pub enum ConfigError {
 }
 
 /// Failed adding a new subtree to a repository fails
+#[allow(missing_docs)]
 #[derive(Debug, PartialEq)]
 pub enum AdditionError {
     BareRepository,
@@ -319,6 +325,7 @@ impl From<ConfigSetError> for AdditionError {
 }
 
 /// Failed to find specified subtree
+#[allow(missing_docs)]
 #[derive(Debug, PartialEq)]
 pub enum FindError {
     BareRepository,
@@ -339,6 +346,7 @@ impl From<ConfigError> for FindError {
 
 /// Failed to update a subtree from remote
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub enum PullError {
     BareRepository,
     Failure(String),
@@ -383,6 +391,7 @@ impl From<SubtreePullError> for PullError {
 }
 
 /// Failed to push subtree to remote
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub enum PushError {
     BareRepository,
@@ -401,6 +410,7 @@ impl From<SubtreePushError> for PushError {
 }
 
 /// Failed to split subtree
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub enum SplitError {
     BareRepository,
@@ -448,12 +458,14 @@ impl Subtrees {
         Ok(Self { repo, configs })
     }
 
+    /// Discover subtrees in a git repository
     #[inline]
     pub fn from_repo(repo: Repository) -> Result<Self, SubtreesError> {
         let configs = all(&repo)?;
         Ok(Self { repo, configs })
     }
 
+    /// Discover subtrees in specified directory
     #[inline]
     pub fn from_dir(path: &Path) -> Result<Self, SubtreesError> {
         let repo = Repository::discover(path)?;
@@ -519,6 +531,7 @@ git-subtree-remote-ref: {}",
         Ok(self.configs.clone())
     }
 
+    /// Returns the repository head commit id
     #[must_use]
     #[inline]
     pub fn head(&self) -> Option<String> {
@@ -562,6 +575,7 @@ git-subtree-remote-ref: {}",
         Ok(())
     }
 
+    /// Pull remote changes in the specified subtree
     #[inline]
     pub fn pull(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<String, PullError> {
         let prefix = subtree.id();
@@ -592,12 +606,14 @@ git-subtree-remote-ref: {}",
         }
     }
 
+    /// Split changes in a subtree to own artificial history and merge it back into HEAD
     #[inline]
     pub fn split(&self, subtree: &SubtreeConfig) -> Result<(), SplitError> {
         let prefix = subtree.id();
         Ok(self.repo.subtree_split(prefix)?)
     }
 
+    /// Push subtree changes to remote
     #[inline]
     pub fn push(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<(), PushError> {
         let prefix = subtree.id();
@@ -616,6 +632,7 @@ git-subtree-remote-ref: {}",
         }
     }
 
+    /// List modules with changes since specified git commit id
     #[inline]
     pub fn changed_modules(&self, id: &str) -> Result<Vec<SubtreeConfig>, ConfigError> {
         let subtree_modules = self.all()?;
@@ -660,6 +677,7 @@ git-subtree-remote-ref: {}",
         Ok(result)
     }
 
+    /// Find subtree by name
     #[allow(clippy::missing_panics_doc)]
     #[inline]
     pub fn find_subtree(&self, needle: &str) -> Result<SubtreeConfig, FindError> {
