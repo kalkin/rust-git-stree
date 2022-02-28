@@ -28,7 +28,7 @@ use std::path::{Path, PathBuf};
 use posix_errors::{PosixError, ENOENT};
 
 /// Configuration for a subtree
-#[derive(Getters, Clone, Eq, PartialEq)]
+#[derive(Getters, Clone, Debug, Eq, PartialEq)]
 pub struct SubtreeConfig {
     /// subtree id
     #[getset(get = "pub")]
@@ -234,6 +234,7 @@ pub fn find_latest_version_matching(
 }
 
 /// Manages subtrees in a repository
+#[derive(Debug)]
 pub struct Subtrees {
     repo: Repository,
     configs: Vec<SubtreeConfig>,
