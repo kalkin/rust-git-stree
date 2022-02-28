@@ -19,7 +19,6 @@ posix-errors = "1"
 lenient_semver = "^0.4"
 regex = "1"
 semver = "1"
-lazy_static = "1.4"
 
 [dev-dependencies]
 tempdir = "0.3.*"
