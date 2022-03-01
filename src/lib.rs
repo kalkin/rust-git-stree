@@ -25,7 +25,7 @@ use git_wrapper::{
 };
 use std::path::{Path, PathBuf};
 
-use posix_errors::{PosixError, ENOENT};
+use posix_errors::{PosixError, EINVAL, ENOENT, ENOTRECOVERABLE, ENOTSUP, EUTF8};
 
 /// Configuration for a subtree
 #[derive(Getters, Clone, Debug, Eq, PartialEq)]
@@ -296,6 +296,27 @@ pub enum AdditionError {
     Failure(String, i32),
 }
 
+impl From<AdditionError> for PosixError {
+    #[inline]
+    fn from(err: AdditionError) -> Self {
+        match err {
+            AdditionError::BareRepository => {
+                let msg = "Operation on bare repository not supported".to_owned();
+                Self::new(ENOTSUP, msg)
+            }
+            AdditionError::WorkTreeDirty => {
+                let msg = "Working tree is dirty".to_owned();
+                Self::new(ENOTSUP, msg)
+            }
+            AdditionError::InvalidVersion(version) => {
+                let msg = format!("Invalid version {}", version);
+                Self::new(EINVAL, msg)
+            }
+            AdditionError::Failure(msg, _) | AdditionError::WriteConfig(msg) => Self::new(1, msg),
+        }
+    }
+}
+
 impl From<SubtreeAddError> for AdditionError {
     #[inline]
     fn from(err: SubtreeAddError) -> Self {
@@ -358,6 +379,35 @@ pub enum PullError {
     WorkTreeDirty,
 }
 
+impl From<PullError> for PosixError {
+    #[inline]
+    fn from(e: PullError) -> Self {
+        match e {
+            PullError::BareRepository => {
+                let msg = "Can not execute pull operation in bare repository".to_owned();
+                Self::new(ENOENT, msg)
+            }
+            PullError::WorkTreeDirty => {
+                let msg = "Can not execute pull operation in a dirty repository".to_owned();
+                Self::new(ENOENT, msg)
+            }
+            PullError::ReferenceNotFound | PullError::InvalidReference => {
+                Self::new(EINVAL, "Can not find reference".to_owned())
+            }
+            PullError::UTF8Decode(_) => {
+                let msg = "Failed UTF8 decoding".to_owned();
+                Self::new(EUTF8, msg)
+            }
+            PullError::NoUpstream => {
+                let msg = "Subtree does not have a upstream defined".to_owned();
+                Self::new(ENOTRECOVERABLE, msg)
+            }
+            PullError::Failure(msg) => Self::new(1, msg),
+            PullError::IOError(err) => Self::from(err),
+        }
+    }
+}
+
 impl From<RefSearchError> for PullError {
     #[inline]
     fn from(prev: RefSearchError) -> Self {
@@ -399,6 +449,25 @@ pub enum PushError {
     Failure(String),
 }
 
+impl From<PushError> for PosixError {
+    #[inline]
+    fn from(err: PushError) -> Self {
+        match err {
+            PushError::BareRepository => {
+                let msg = "Can not execute push operation in bare repository".to_owned();
+                Self::new(ENOENT, msg)
+            }
+
+            PushError::NoUpstream => {
+                let msg = "Subtree does not have a upstream defined".to_owned();
+                Self::new(ENOTRECOVERABLE, msg)
+            }
+
+            PushError::Failure(msg) => Self::new(1, msg),
+        }
+    }
+}
+
 impl From<SubtreePushError> for PushError {
     #[inline]
     fn from(prev: SubtreePushError) -> Self {
@@ -416,6 +485,23 @@ pub enum SplitError {
     BareRepository,
     WorkTreeDirty,
     Failure(String),
+}
+
+impl From<SplitError> for PosixError {
+    #[inline]
+    fn from(err: SplitError) -> Self {
+        match err {
+            SplitError::BareRepository => {
+                let msg = "Can not execute push operation in bare repository".to_owned();
+                Self::new(ENOENT, msg)
+            }
+            SplitError::WorkTreeDirty => {
+                let msg = "Can not execute push operation in a dirty repository".to_owned();
+                Self::new(ENOENT, msg)
+            }
+            SplitError::Failure(msg) => Self::new(1, msg),
+        }
+    }
 }
 
 impl From<SubtreeSplitError> for SplitError {
