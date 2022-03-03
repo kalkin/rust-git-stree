@@ -25,7 +25,7 @@ use git_wrapper::{
 };
 use std::path::{Path, PathBuf};
 
-use posix_errors::{PosixError, EINVAL, ENOENT, ENOTRECOVERABLE, ENOTSUP, EUTF8};
+use posix_errors::{PosixError, EAGAIN, EINVAL, ENOENT, ENOTRECOVERABLE, ENOTSUP, EUTF8};
 
 /// Configuration for a subtree
 #[derive(Getters, Clone, Debug, Eq, PartialEq)]
@@ -373,6 +373,7 @@ pub enum PullError {
     Failure(String),
     IOError(std::io::Error),
     InvalidReference,
+    NoChanges,
     NoUpstream,
     ReferenceNotFound,
     UTF8Decode(std::string::FromUtf8Error),
@@ -397,6 +398,10 @@ impl From<PullError> for PosixError {
             PullError::UTF8Decode(_) => {
                 let msg = "Failed UTF8 decoding".to_owned();
                 Self::new(EUTF8, msg)
+            }
+            PullError::NoChanges => {
+                let msg = "Upstream does not have any new changes".to_owned();
+                Self::new(EAGAIN, msg)
             }
             PullError::NoUpstream => {
                 let msg = "Subtree does not have a upstream defined".to_owned();
@@ -673,7 +678,12 @@ git-subtree-remote-ref: {}",
         }
 
         let message = format!("Update :{} to {}", prefix, &git_ref);
+        let head_before = self.repo.head().expect("HEAD ref exists");
         self.repo.subtree_pull(remote, prefix, git_ref, &message)?;
+        let head_after = self.repo.head().expect("HEAD ref exists");
+        if head_before == head_after {
+            return Err(PullError::NoChanges);
+        }
         let mut cmd = self.repo.git();
         let out = cmd
             .arg("rev-parse")
@@ -942,8 +952,12 @@ mod test {
             upstream: Some("https://github.com/kalkin/file-expert".to_string()),
             pull_pre_releases: false,
         };
-        mgr.add(&config, Some("master"), None).unwrap();
+        mgr.add(&config, Some("v0.10.1"), None).unwrap();
         let actual = mgr.pull(&config, "v0.13.1");
-        assert!(actual.is_ok(), "Expected successful pull execution");
+        assert!(
+            actual.is_ok(),
+            "Expected successful pull execution, got: {:?}",
+            actual
+        );
     }
 }
