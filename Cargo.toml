@@ -1,24 +1,22 @@
 [package]
-authors = ["Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>"]
-categories = ["development-tools"]
-description = "Library for working with my improved git subtree schema"
-edition = "2021"
-keywords = ["git"]
-license = "LGPL-3.0-or-later"
-name = "git-stree"
-repository = "https://github.com/kalkin/rust-git-stree"
-version = "0.2.1"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+name = 'git-stree'
+authors = ['Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>']
+categories = ['development-tools']
+description = 'Library for working with my improved git subtree schema'
+edition = '2021'
+keywords = ['git']
+license = 'LGPL-3.0-or-later'
+repository = 'https://github.com/kalkin/rust-git-stree'
+version = '0.2.1'
 
 [dependencies]
-getset = "0.1.*"
-configparser = "3"
-git-wrapper = "0.5.*"
-posix-errors = "1"
-lenient_semver = "^0.4"
-regex = "1"
-semver = "1"
+configparser = '3'
+getset = '0.1.*'
+git-wrapper = '0.5.*'
+lenient_semver = '^0.4'
+posix-errors = '1'
+regex = '1'
+semver = '1'
 
 [dev-dependencies]
-tempdir = "0.3.*"
+tempdir = '0.3.*'
