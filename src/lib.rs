@@ -687,8 +687,9 @@ git-subtree-remote-ref: {}",
                 .trim()
                 .to_owned())
         } else {
-            eprintln!("Failed to execute git rev-parse");
-            Ok(git_ref.to_owned())
+            Err(PullError::Failure(
+                "Failed to execute git rev-parse".to_owned(),
+            ))
         }
     }
 
