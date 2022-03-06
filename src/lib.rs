@@ -861,24 +861,7 @@ mod test {
     use crate::SubtreeConfig;
     use crate::Subtrees;
     use git_wrapper::Repository;
-    use tempdir::TempDir;
-
-    // https://stackoverflow.com/a/63904992
-    macro_rules! function {
-        () => {{
-            fn f() {}
-            fn type_name_of<T>(_: T) -> &'static str {
-                std::any::type_name::<T>()
-            }
-            let name = type_name_of(f);
-
-            // Find and cut the rest of the path
-            match &name[..name.len() - 3].rfind(':') {
-                Some(pos) => &name[pos + 1..name.len() - 3],
-                None => &name[..name.len() - 3],
-            }
-        }};
-    }
+    use tempfile::TempDir;
 
     #[test]
     fn bkg_monorepo() {
@@ -908,7 +891,7 @@ mod test {
 
     #[test]
     fn initialization() {
-        let tmp_dir = TempDir::new(function!()).unwrap();
+        let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         let _ = Repository::create_bare(repo_path).unwrap();
         let actual = Subtrees::from_dir(&repo_path);
@@ -917,7 +900,7 @@ mod test {
 
     #[test]
     fn subtree_add() {
-        let tmp_dir = TempDir::new(function!()).unwrap();
+        let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         {
             let repo = Repository::create(repo_path).unwrap();
@@ -941,7 +924,7 @@ mod test {
 
     #[test]
     fn subtree_pull() {
-        let tmp_dir = TempDir::new(function!()).unwrap();
+        let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         {
             let repo = Repository::create(repo_path).unwrap();
