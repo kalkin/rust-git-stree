@@ -325,6 +325,7 @@ impl From<SubtreeAddError> for AdditionError {
         match err {
             SubtreeAddError::Failure(msg, code) => Self::Failure(msg, code),
             SubtreeAddError::WorkTreeDirty => Self::WorkTreeDirty,
+            SubtreeAddError::BareRepository => Self::BareRepository,
         }
     }
 }
@@ -420,9 +421,8 @@ impl From<RefSearchError> for PullError {
             RefSearchError::ParsingFailure(msg) | RefSearchError::Failure(msg) => {
                 Self::Failure(msg)
             }
-            RefSearchError::UTF8Decode(err) => Self::UTF8Decode(err),
             RefSearchError::IOError(err) => Self::IOError(err),
-            RefSearchError::NotFound => Self::ReferenceNotFound,
+            RefSearchError::NotFound(_) => Self::ReferenceNotFound,
         }
     }
 }
