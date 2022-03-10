@@ -20,12 +20,12 @@ use std::collections::HashMap;
 use configparser::ini::Ini;
 use git_wrapper::ConfigSetError;
 use git_wrapper::{
-    InvalidRefError, RefSearchError, RepoError, Repository, SubtreeAddError, SubtreePullError,
+    RefSearchError, RepoError, Repository, StagingError, SubtreeAddError, SubtreePullError,
     SubtreePushError, SubtreeSplitError,
 };
 use std::path::{Path, PathBuf};
 
-use posix_errors::{PosixError, EAGAIN, EINVAL, ENOENT, ENOTRECOVERABLE, ENOTSUP, EUTF8};
+use posix_errors::{PosixError, EAGAIN, EINVAL, ENOENT, ENOTRECOVERABLE, ENOTSUP};
 
 /// Configuration for a subtree
 #[derive(Getters, Clone, Debug, Eq, PartialEq)]
@@ -245,56 +245,47 @@ pub struct Subtrees {
 
 /// Failed to initialize `Subtrees`
 #[allow(missing_docs)]
-#[derive(Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum SubtreesError {
-    BareRepo,
-    RepoNotFound,
-    InvalidConfig(String),
-    InvalidDirectory(String),
+    #[error("{0}")]
+    RepoError(#[from] RepoError),
+    #[error("{0}")]
+    InvalidConfig(#[from] ConfigError),
 }
 
-impl From<RepoError> for SubtreesError {
+impl From<SubtreesError> for PosixError {
     #[inline]
-    fn from(err: RepoError) -> Self {
+    fn from(err: SubtreesError) -> Self {
         match err {
-            RepoError::BareRepo => Self::BareRepo,
-            RepoError::GitDirNotFound => Self::RepoNotFound,
-            RepoError::InvalidDirectory(p) | RepoError::AbsolutionError(p) => {
-                let msg = format!("Failed to handle directory {:?}", p);
-                Self::InvalidDirectory(msg)
-            }
-            RepoError::FailAccessCwd => Self::InvalidDirectory("Failed to access CWD".to_owned()),
-        }
-    }
-}
-
-impl From<ConfigError> for SubtreesError {
-    #[inline]
-    fn from(err: ConfigError) -> Self {
-        match err {
-            ConfigError::ParseFailed(path_buf) | ConfigError::ReadFailed(path_buf) => {
-                Self::InvalidConfig(path_buf.to_string_lossy().to_string())
-            }
+            SubtreesError::InvalidConfig(e) => Self::new(EINVAL, format!("{}", e)),
+            SubtreesError::RepoError(e) => e.into(),
         }
     }
 }
 
 /// Failed reading or parsing a `.gitsubtrees` file.
 #[allow(missing_docs)]
-#[derive(Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
-    ReadFailed(PathBuf),
+    #[error("{0}")]
+    ReadFailed(#[from] std::io::Error),
+    #[error("Failed to parse config {0:?}")]
     ParseFailed(PathBuf),
 }
 
 /// Failed adding a new subtree to a repository fails
 #[allow(missing_docs)]
-#[derive(Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum AdditionError {
-    BareRepository,
+    #[error("{0}")]
+    AddError(#[from] SubtreeAddError),
+    #[error("Work tree is dirty")]
     WorkTreeDirty,
-    InvalidVersion(String),
+    #[error("Failed to write config {0:?}")]
     WriteConfig(String),
+    #[error("{0}")]
+    StagingError(#[from] StagingError),
+    #[error("{0}")]
     Failure(String, i32),
 }
 
@@ -302,34 +293,16 @@ impl From<AdditionError> for PosixError {
     #[inline]
     fn from(err: AdditionError) -> Self {
         match err {
-            AdditionError::BareRepository => {
-                let msg = "Operation on bare repository not supported".to_owned();
-                Self::new(ENOTSUP, msg)
-            }
+            AdditionError::AddError(e) => e.into(),
+            AdditionError::StagingError(e) => e.into(),
             AdditionError::WorkTreeDirty => {
                 let msg = "Working tree is dirty".to_owned();
                 Self::new(ENOTSUP, msg)
-            }
-            AdditionError::InvalidVersion(version) => {
-                let msg = format!("Invalid version {}", version);
-                Self::new(EINVAL, msg)
             }
             AdditionError::Failure(msg, _) | AdditionError::WriteConfig(msg) => Self::new(1, msg),
         }
     }
 }
-
-impl From<SubtreeAddError> for AdditionError {
-    #[inline]
-    fn from(err: SubtreeAddError) -> Self {
-        match err {
-            SubtreeAddError::Failure(msg, code) => Self::Failure(msg, code),
-            SubtreeAddError::WorkTreeDirty => Self::WorkTreeDirty,
-            SubtreeAddError::BareRepository => Self::BareRepository,
-        }
-    }
-}
-
 impl From<ConfigSetError> for AdditionError {
     #[inline]
     fn from(err: ConfigSetError) -> Self {
@@ -349,57 +322,50 @@ impl From<ConfigSetError> for AdditionError {
 
 /// Failed to find specified subtree
 #[allow(missing_docs)]
-#[derive(Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum FindError {
-    ReadFailed(PathBuf),
-    ParseFailed(PathBuf),
+    #[error("Bare repository")]
+    BareRepository,
+    #[error("{0}")]
+    ConfigError(#[from] ConfigError),
+    #[error("Not found subtree {0}")]
     NotFound(String),
 }
 
-impl From<ConfigError> for FindError {
+impl From<FindError> for PosixError {
     #[inline]
-    fn from(err: ConfigError) -> Self {
-        match err {
-            ConfigError::ReadFailed(p) => Self::ReadFailed(p),
-            ConfigError::ParseFailed(p) => Self::ParseFailed(p),
-        }
+    fn from(err: FindError) -> Self {
+        Self::new(EINVAL, format!("{}", err))
     }
 }
 
 /// Failed to update a subtree from remote
-#[derive(Debug)]
 #[allow(missing_docs)]
+#[derive(thiserror::Error, Debug)]
 pub enum PullError {
-    BareRepository,
+    #[error("{0}")]
     Failure(String),
-    IOError(std::io::Error),
-    InvalidReference,
+    #[error("{0}")]
+    IOError(#[from] std::io::Error),
+    #[error("No changes to pull")]
     NoChanges,
+    #[error("No upstream remote defined")]
     NoUpstream,
-    ReferenceNotFound,
-    UTF8Decode(std::string::FromUtf8Error),
+    #[error("{0}")]
+    ReferenceNotFound(#[from] RefSearchError),
+    #[error("Work tree is dirty")]
     WorkTreeDirty,
 }
 
 impl From<PullError> for PosixError {
     #[inline]
-    fn from(e: PullError) -> Self {
-        match e {
-            PullError::BareRepository => {
-                let msg = "Can not execute pull operation in bare repository".to_owned();
-                Self::new(ENOENT, msg)
-            }
+    fn from(err: PullError) -> Self {
+        match err {
             PullError::WorkTreeDirty => {
                 let msg = "Can not execute pull operation in a dirty repository".to_owned();
                 Self::new(ENOENT, msg)
             }
-            PullError::ReferenceNotFound | PullError::InvalidReference => {
-                Self::new(EINVAL, "Can not find reference".to_owned())
-            }
-            PullError::UTF8Decode(_) => {
-                let msg = "Failed UTF8 decoding".to_owned();
-                Self::new(EUTF8, msg)
-            }
+            PullError::ReferenceNotFound(e) => e.into(),
             PullError::NoChanges => {
                 let msg = "Upstream does not have any new changes".to_owned();
                 Self::new(EAGAIN, msg)
@@ -409,28 +375,8 @@ impl From<PullError> for PosixError {
                 Self::new(ENOTRECOVERABLE, msg)
             }
             PullError::Failure(msg) => Self::new(1, msg),
-            PullError::IOError(err) => Self::from(err),
+            PullError::IOError(e) => Self::from(e),
         }
-    }
-}
-
-impl From<RefSearchError> for PullError {
-    #[inline]
-    fn from(prev: RefSearchError) -> Self {
-        match prev {
-            RefSearchError::ParsingFailure(msg) | RefSearchError::Failure(msg) => {
-                Self::Failure(msg)
-            }
-            RefSearchError::IOError(err) => Self::IOError(err),
-            RefSearchError::NotFound(_) => Self::ReferenceNotFound,
-        }
-    }
-}
-
-impl From<InvalidRefError> for PullError {
-    #[inline]
-    fn from(_prev: InvalidRefError) -> Self {
-        Self::InvalidReference
     }
 }
 
@@ -446,10 +392,11 @@ impl From<SubtreePullError> for PullError {
 
 /// Failed to push subtree to remote
 #[allow(missing_docs)]
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum PushError {
-    BareRepository,
+    #[error("No upstream remote defined")]
     NoUpstream,
+    #[error("{0}")]
     Failure(String),
 }
 
@@ -457,11 +404,6 @@ impl From<PushError> for PosixError {
     #[inline]
     fn from(err: PushError) -> Self {
         match err {
-            PushError::BareRepository => {
-                let msg = "Can not execute push operation in bare repository".to_owned();
-                Self::new(ENOENT, msg)
-            }
-
             PushError::NoUpstream => {
                 let msg = "Subtree does not have a upstream defined".to_owned();
                 Self::new(ENOTRECOVERABLE, msg)
@@ -483,10 +425,11 @@ impl From<SubtreePushError> for PushError {
 
 /// Failed to split subtree
 #[allow(missing_docs)]
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum SplitError {
-    BareRepository,
+    #[error("Work tree is dirty")]
     WorkTreeDirty,
+    #[error("{0}")]
     Failure(String),
 }
 
@@ -494,10 +437,6 @@ impl From<SplitError> for PosixError {
     #[inline]
     fn from(err: SplitError) -> Self {
         match err {
-            SplitError::BareRepository => {
-                let msg = "Can not execute push operation in bare repository".to_owned();
-                Self::new(ENOENT, msg)
-            }
             SplitError::WorkTreeDirty => {
                 let msg = "Can not execute push operation in a dirty repository".to_owned();
                 Self::new(ENOENT, msg)
@@ -513,23 +452,6 @@ impl From<SubtreeSplitError> for SplitError {
         match prev {
             SubtreeSplitError::Failure(msg, _) => Self::Failure(msg),
             SubtreeSplitError::WorkTreeDirty => Self::WorkTreeDirty,
-        }
-    }
-}
-
-#[cfg(not(tarpaulin_include))]
-impl std::fmt::Display for ConfigError {
-    #[inline]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConfigError::ParseFailed(p) => {
-                let file = p.to_string_lossy();
-                write!(f, "Failed to parse file {:?}", file)
-            }
-            ConfigError::ReadFailed(p) => {
-                let file = p.to_string_lossy();
-                write!(f, "Failed to read file {:?}", file)
-            }
         }
     }
 }
@@ -593,18 +515,12 @@ git-subtree-remote-ref: {}",
             self.repo.subtree_add(remote, target, rev, &msg)?;
         }
         self.persist(subtree)?;
-        let mut cmd = self.repo.git();
-        cmd.args(&["add", &subtree.config_file()]);
-        let out = cmd.output().expect("Failed to execute git-add(1)");
-        if !out.status.success() {
-            let msg = String::from_utf8_lossy(&out.stderr).to_string();
-            return Err(AdditionError::WriteConfig(msg));
-        }
+        self.repo.stage(Path::new(&subtree.config_file()))?;
 
-        let mut cmd2 = self.repo.git();
-        cmd2.args(&["commit", "--amend", "--no-edit"]);
-        let out2 = cmd2.output().expect("Failed to execute git-commit(1)");
-        if !out2.status.success() {
+        let mut cmd = self.repo.git();
+        cmd.args(&["commit", "--amend", "--no-edit"]);
+        let out = cmd.output().expect("Failed to execute git-commit(1)");
+        if !out.status.success() {
             let msg = String::from_utf8_lossy(&out.stderr).to_string();
             return Err(AdditionError::WriteConfig(msg));
         }
@@ -790,13 +706,9 @@ fn configs_from_path(
     parser: &mut Ini,
     path: &Path,
 ) -> Result<Vec<SubtreeConfig>, ConfigError> {
-    let content;
-    match repo.hack_read_file(path) {
-        Err(_) => return Err(ConfigError::ReadFailed(path.to_path_buf())),
-        Ok(vec) => {
-            content = String::from_utf8_lossy(&vec).to_string();
-        }
-    }
+    let content = repo
+        .hack_read_file(path)
+        .map(|vec| String::from_utf8_lossy(&vec).to_string())?;
     let msg = &format!("Failed to parse {:?}", path);
     let config_map = parser.read(content).expect(msg);
     let parent_dir = path.parent();
