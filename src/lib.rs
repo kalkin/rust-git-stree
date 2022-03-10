@@ -247,6 +247,7 @@ pub struct Subtrees {
 #[allow(missing_docs)]
 #[derive(Debug, PartialEq)]
 pub enum SubtreesError {
+    BareRepo,
     RepoNotFound,
     InvalidConfig(String),
     InvalidDirectory(String),
@@ -256,6 +257,7 @@ impl From<RepoError> for SubtreesError {
     #[inline]
     fn from(err: RepoError) -> Self {
         match err {
+            RepoError::BareRepo => Self::BareRepo,
             RepoError::GitDirNotFound => Self::RepoNotFound,
             RepoError::InvalidDirectory(p) | RepoError::AbsolutionError(p) => {
                 let msg = format!("Failed to handle directory {:?}", p);
@@ -321,7 +323,6 @@ impl From<SubtreeAddError> for AdditionError {
     #[inline]
     fn from(err: SubtreeAddError) -> Self {
         match err {
-            SubtreeAddError::BareRepository => Self::BareRepository,
             SubtreeAddError::Failure(msg, code) => Self::Failure(msg, code),
             SubtreeAddError::WorkTreeDirty => Self::WorkTreeDirty,
         }
@@ -349,7 +350,6 @@ impl From<ConfigSetError> for AdditionError {
 #[allow(missing_docs)]
 #[derive(Debug, PartialEq)]
 pub enum FindError {
-    BareRepository,
     ReadFailed(PathBuf),
     ParseFailed(PathBuf),
     NotFound(String),
@@ -439,7 +439,6 @@ impl From<SubtreePullError> for PullError {
     fn from(prev: SubtreePullError) -> Self {
         match prev {
             SubtreePullError::Failure(msg, _) => Self::Failure(msg),
-            SubtreePullError::BareRepository => Self::BareRepository,
             SubtreePullError::WorkTreeDirty => Self::WorkTreeDirty,
         }
     }
@@ -478,7 +477,6 @@ impl From<SubtreePushError> for PushError {
     fn from(prev: SubtreePushError) -> Self {
         match prev {
             SubtreePushError::Failure(msg, _) => Self::Failure(msg),
-            SubtreePushError::BareRepository => Self::BareRepository,
         }
     }
 }
@@ -514,7 +512,6 @@ impl From<SubtreeSplitError> for SplitError {
     fn from(prev: SubtreeSplitError) -> Self {
         match prev {
             SubtreeSplitError::Failure(msg, _) => Self::Failure(msg),
-            SubtreeSplitError::BareRepository => Self::BareRepository,
             SubtreeSplitError::WorkTreeDirty => Self::WorkTreeDirty,
         }
     }
@@ -626,7 +623,7 @@ git-subtree-remote-ref: {}",
     #[must_use]
     #[inline]
     pub fn head(&self) -> Option<String> {
-        self.repo.head()
+        Some(self.repo.head())
     }
 
     fn persist(&self, subtree: &SubtreeConfig) -> Result<(), ConfigSetError> {
@@ -678,9 +675,9 @@ git-subtree-remote-ref: {}",
         }
 
         let message = format!("Update :{} to {}", prefix, &git_ref);
-        let head_before = self.repo.head().expect("HEAD ref exists");
+        let head_before = self.repo.head();
         self.repo.subtree_pull(remote, prefix, git_ref, &message)?;
-        let head_after = self.repo.head().expect("HEAD ref exists");
+        let head_after = self.repo.head();
         if head_before == head_after {
             return Err(PullError::NoChanges);
         }
@@ -778,10 +775,6 @@ git-subtree-remote-ref: {}",
     #[allow(clippy::missing_panics_doc)]
     #[inline]
     pub fn find_subtree(&self, needle: &str) -> Result<SubtreeConfig, FindError> {
-        if self.repo.is_bare() {
-            return Err(FindError::BareRepository);
-        }
-
         let configs = self.all()?;
         for c in configs {
             if c.id() == needle {
@@ -871,6 +864,7 @@ mod test {
     use crate::SubtreeConfig;
     use crate::Subtrees;
     use git_wrapper::Repository;
+
     use tempfile::TempDir;
 
     #[test]
@@ -899,14 +893,14 @@ mod test {
         }
     }
 
-    #[test]
+    /*#[test]
     fn initialization() {
         let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
-        let _ = Repository::create_bare(repo_path).unwrap();
+        let _ = BareRepository::create(repo_path).expect("Created bare repository");
         let actual = Subtrees::from_dir(&repo_path);
         assert!(actual.is_ok(), "Expected a subtrees instance");
-    }
+    }*/
 
     #[test]
     fn subtree_add() {
