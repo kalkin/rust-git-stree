@@ -101,6 +101,18 @@ impl SubtreeConfig {
             .map_or_else(|| self.id.clone(), |x| x.1.to_owned())
     }
 
+    fn parse_remote_version_req(input: &str) -> Result<semver::VersionReq, PosixError> {
+        let tmp = input
+            .strip_suffix('}')
+            .ok_or_else(|| PosixError::new(EINVAL, format!("Illegal upstream value {}", input)))?;
+
+        let tmp2 = tmp
+            .strip_prefix("@{")
+            .ok_or_else(|| PosixError::new(EINVAL, format!("Illegal upstream value {}", input)))?;
+
+        semver::VersionReq::parse(tmp2).map_err(|e| PosixError::new(EINVAL, format!("{}", e)))
+    }
+
     /// Figure out which named ref to pull from.
     ///
     /// # Panics
@@ -116,16 +128,14 @@ impl SubtreeConfig {
             panic!("Subtree does not have upstream remote defined");
         }
         let candidate = self.follow.clone().unwrap_or_else(|| "HEAD".to_owned());
-        let remote = &self.upstream.clone().unwrap();
+        let remote = &self
+            .upstream
+            .clone()
+            .ok_or_else(|| PosixError::new(ENOENT, "No upstream set".to_owned()))?;
         let follow = if candidate == *"@{tags}" {
             find_latest_version(remote)?
         } else if candidate.starts_with("@{") {
-            let tmp = candidate
-                .strip_suffix('}')
-                .unwrap()
-                .strip_prefix("@{")
-                .unwrap();
-            let range = semver::VersionReq::parse(tmp).expect("Got invalid version range");
+            let range = Self::parse_remote_version_req(&candidate)?;
             return find_latest_version_matching(remote, &range, *self.pull_pre_releases());
         } else if candidate == *"HEAD" {
             git_wrapper::resolve_head(remote)?
@@ -273,6 +283,16 @@ pub enum ConfigError {
     ParseFailed(PathBuf),
 }
 
+impl From<ConfigError> for PosixError {
+    #[inline]
+    fn from(err: ConfigError) -> Self {
+        match err {
+            ConfigError::ReadFailed(e) => e.into(),
+            ConfigError::ParseFailed(p) => Self::new(1, format!("Failed to parse config {:?}", p)),
+        }
+    }
+}
+
 /// Failed adding a new subtree to a repository fails
 #[allow(missing_docs)]
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -283,8 +303,12 @@ pub enum AdditionError {
     WorkTreeDirty,
     #[error("Failed to write config {0:?}")]
     WriteConfig(String),
+    #[error("No upstream remote defined")]
+    NoUpstream,
     #[error("{0}")]
     StagingError(#[from] StagingError),
+    #[error("Invalid version {0}")]
+    InvalidVersion(String),
     #[error("{0}")]
     Failure(String, i32),
 }
@@ -298,6 +322,11 @@ impl From<AdditionError> for PosixError {
             AdditionError::WorkTreeDirty => {
                 let msg = "Working tree is dirty".to_owned();
                 Self::new(ENOTSUP, msg)
+            }
+            AdditionError::NoUpstream => Self::new(1, format!("{}", err)),
+            AdditionError::InvalidVersion(version) => {
+                let msg = format!("Invalid version {}", version);
+                Self::new(EINVAL, msg)
             }
             AdditionError::Failure(msg, _) | AdditionError::WriteConfig(msg) => Self::new(1, msg),
         }
@@ -483,6 +512,8 @@ impl Subtrees {
         Ok(Self { repo, configs })
     }
 
+    /// Add subtree to repository
+    ///
     /// # Errors
     ///
     /// Throws errors when there are errors
@@ -498,7 +529,7 @@ impl Subtrees {
         subject: Option<&str>,
     ) -> Result<(), AdditionError> {
         if let Some(rev) = revision {
-            let remote = subtree.upstream.as_ref().unwrap();
+            let remote = subtree.upstream.as_ref().ok_or(AdditionError::NoUpstream)?;
             let target = subtree.id();
 
             let title = subject.map_or_else(
@@ -819,7 +850,7 @@ mod test {
         let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         {
-            let repo = Repository::create(repo_path).unwrap();
+            let repo = Repository::create(repo_path).expect("Created repository");
             let readme = repo_path.join("README.md");
             std::fs::File::create(&readme).unwrap();
             std::fs::write(&readme, "# README").unwrap();
@@ -843,7 +874,7 @@ mod test {
         let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         {
-            let repo = Repository::create(repo_path).unwrap();
+            let repo = Repository::create(repo_path).expect("Created repository");
             let readme = repo_path.join("README.md");
             std::fs::File::create(&readme).unwrap();
             std::fs::write(&readme, "# README").unwrap();
