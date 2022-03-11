@@ -614,12 +614,7 @@ git-subtree-remote-ref: {}",
     #[inline]
     pub fn pull(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<String, PullError> {
         let prefix = subtree.id();
-        let remote;
-        if let Some(url) = subtree.upstream() {
-            remote = url;
-        } else {
-            return Err(PullError::NoUpstream);
-        }
+        let remote = subtree.upstream().as_ref().ok_or(PullError::NoUpstream)?;
 
         let message = format!("Update :{} to {}", prefix, &git_ref);
         let head_before = self.repo.head();
@@ -658,12 +653,7 @@ git-subtree-remote-ref: {}",
     #[inline]
     pub fn push(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<(), PushError> {
         let prefix = subtree.id();
-        let remote;
-        if let Some(url) = subtree.upstream() {
-            remote = url;
-        } else {
-            return Err(PushError::NoUpstream);
-        }
+        let remote = subtree.upstream().as_ref().ok_or(PushError::NoUpstream)?;
 
         if git_ref == "HEAD" {
             let head = git_wrapper::resolve_head(remote).expect("asd");
@@ -745,16 +735,16 @@ fn configs_from_path(
     let parent_dir = path.parent();
     let mut result = Vec::with_capacity(config_map.keys().len());
     for name in config_map.keys() {
-        let id: String;
-        if let Some(parent) = parent_dir {
-            id = parent
-                .join(name)
-                .to_str()
-                .expect("Convertable to str")
-                .to_owned();
-        } else {
-            id = name.clone();
-        }
+        let id: String = parent_dir.map_or_else(
+            || name.clone(),
+            |parent| {
+                parent
+                    .join(name)
+                    .to_str()
+                    .expect("Convertable to str")
+                    .to_owned()
+            },
+        );
         result.push(SubtreeConfig {
             id,
             follow: parser.get(name, "follow"),
