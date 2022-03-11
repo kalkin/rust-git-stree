@@ -125,7 +125,10 @@ impl SubtreeConfig {
     #[inline]
     pub fn ref_to_pull(&self) -> Result<String, PosixError> {
         if !self.is_pullable() {
-            panic!("Subtree does not have upstream remote defined");
+            return Err(PosixError::new(
+                ENOENT,
+                "Subtree does not have upstream remote defined".to_owned(),
+            ));
         }
         let candidate = self.follow.clone().unwrap_or_else(|| "HEAD".to_owned());
         let remote = &self
@@ -345,6 +348,7 @@ impl From<ConfigSetError> for AdditionError {
                 Self::WriteConfig(msg)
             }
             ConfigSetError::InvalidSectionOrKey(msg) => Self::WriteConfig(msg),
+            ConfigSetError::Failure(msg, code) => Self::Failure(msg, code),
         }
     }
 }
