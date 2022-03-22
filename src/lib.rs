@@ -675,7 +675,7 @@ git-subtree-remote-ref: {}",
     #[inline]
     pub fn push(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<(), PushError> {
         let prefix = subtree.id();
-        let remote = subtree.upstream().as_ref().ok_or(PushError::NoUpstream)?;
+        let remote = subtree.origin().as_ref().ok_or(PushError::NoUpstream)?;
 
         if git_ref == "HEAD" {
             let head = git_wrapper::resolve_head(remote).expect("asd");
