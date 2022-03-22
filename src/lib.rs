@@ -632,7 +632,11 @@ git-subtree-remote-ref: {}",
     #[inline]
     pub fn pull(&self, subtree: &SubtreeConfig, git_ref: &str) -> Result<String, PullError> {
         let prefix = subtree.id();
-        let remote = subtree.upstream().as_ref().ok_or(PullError::NoUpstream)?;
+        let remote = subtree
+            .upstream()
+            .as_ref()
+            .or_else(|| subtree.origin().as_ref())
+            .ok_or(PullError::NoUpstream)?;
 
         let message = format!("Update :{} to {}", prefix, &git_ref);
         let head_before = self.repo.head();
