@@ -47,6 +47,20 @@ pub struct SubtreeConfig {
     pull_pre_releases: bool,
 }
 
+impl Ord for SubtreeConfig {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd for SubtreeConfig {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl SubtreeConfig {
     /// Return a new instance
     #[must_use]
