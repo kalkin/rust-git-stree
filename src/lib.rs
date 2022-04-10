@@ -869,7 +869,7 @@ mod test {
             repo.stage(&readme).unwrap();
             repo.commit("Test").unwrap();
         }
-        let mgr = Subtrees::from_dir(&repo_path).unwrap();
+        let mgr = Subtrees::from_dir(repo_path).unwrap();
         let config = SubtreeConfig {
             id: "bar".to_string(),
             follow: Some("master".to_string()),
@@ -893,7 +893,7 @@ mod test {
             repo.stage(&readme).unwrap();
             repo.commit("Test").unwrap();
         }
-        let mgr = Subtrees::from_dir(&repo_path).unwrap();
+        let mgr = Subtrees::from_dir(repo_path).unwrap();
         let config = SubtreeConfig {
             id: "bar".to_string(),
             follow: Some("v0.10.1".to_string()),
