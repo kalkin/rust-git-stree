@@ -871,10 +871,10 @@ mod test {
         }
         let mgr = Subtrees::from_dir(repo_path).unwrap();
         let config = SubtreeConfig {
-            id: "bar".to_string(),
-            follow: Some("master".to_string()),
+            id: "bar".to_owned(),
+            follow: Some("master".to_owned()),
             origin: None,
-            upstream: Some("https://github.com/kalkin/file-expert".to_string()),
+            upstream: Some("https://github.com/kalkin/file-expert".to_owned()),
             pull_pre_releases: false,
         };
         let actual = mgr.add(&config, Some("master"), None);
@@ -895,10 +895,10 @@ mod test {
         }
         let mgr = Subtrees::from_dir(repo_path).unwrap();
         let config = SubtreeConfig {
-            id: "bar".to_string(),
-            follow: Some("v0.10.1".to_string()),
+            id: "bar".to_owned(),
+            follow: Some("v0.10.1".to_owned()),
             origin: None,
-            upstream: Some("https://github.com/kalkin/file-expert".to_string()),
+            upstream: Some("https://github.com/kalkin/file-expert".to_owned()),
             pull_pre_releases: false,
         };
         mgr.add(&config, Some("v0.10.1"), None).unwrap();
