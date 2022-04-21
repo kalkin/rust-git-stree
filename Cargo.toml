@@ -12,7 +12,7 @@ version = '0.2.2'
 [dependencies]
 configparser = '3'
 getset = '0.1.*'
-git-wrapper = '0.5.*'
+git-wrapper = '0.6.*'
 lenient_semver = '^0.4'
 posix-errors = '1'
 regex = '1'
