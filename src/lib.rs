@@ -148,7 +148,8 @@ impl SubtreeConfig {
         let remote = &self
             .upstream
             .clone()
-            .ok_or_else(|| PosixError::new(ENOENT, "No upstream set".to_owned()))?;
+            .or_else(|| self.origin.clone())
+            .ok_or_else(|| PosixError::new(ENOENT, "No origin or upstream set".to_owned()))?;
         let follow = if candidate == *"@{tags}" {
             find_latest_version(remote)?
         } else if candidate.starts_with("@{") {
