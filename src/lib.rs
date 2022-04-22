@@ -84,7 +84,7 @@ impl SubtreeConfig {
     #[must_use]
     #[inline]
     pub const fn is_pullable(&self) -> bool {
-        self.upstream.is_some()
+        self.upstream.is_some() || self.origin.is_some()
     }
 
     /// Return `true` if origin is set
