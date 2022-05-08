@@ -9,6 +9,8 @@ license = 'LGPL-3.0-or-later'
 repository = 'https://github.com/kalkin/rust-git-stree'
 version = '0.2.3'
 
+[lib]
+
 [dependencies]
 configparser = '3'
 getset = '0.1.*'
