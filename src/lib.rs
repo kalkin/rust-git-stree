@@ -313,7 +313,7 @@ impl From<ConfigError> for PosixError {
 
 /// Failed adding a new subtree to a repository fails
 #[allow(missing_docs)]
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq, Eq)]
 pub enum AdditionError {
     #[error("{0}")]
     AddError(#[from] SubtreeAddError),
