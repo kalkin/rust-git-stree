@@ -830,7 +830,11 @@ mod test {
             let result = subtrees.all();
             assert!(result.is_ok(), "Found subtree configs");
             let all_configs = result.unwrap();
-            assert!(all_configs.len() > 100, "Sould find at least 100 subtrees");
+            assert!(
+                all_configs.len() > 50,
+                "Sould find at least 50 subtrees, found: {}",
+                all_configs.len()
+            );
         }
 
         // TODO rewrite it as a test for
