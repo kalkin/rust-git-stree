@@ -7,7 +7,7 @@ edition = '2021'
 keywords = ['git']
 license = 'LGPL-3.0-or-later'
 repository = 'https://github.com/kalkin/rust-git-stree'
-version = '0.2.3'
+version = '0.2.4'
 
 [lib]
 
