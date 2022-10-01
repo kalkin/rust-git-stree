@@ -867,6 +867,7 @@ mod test {
         let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         {
+            git_wrapper::setup_test_author();
             let repo = Repository::create(repo_path).expect("Created repository");
             let readme = repo_path.join("README.md");
             std::fs::File::create(&readme).unwrap();
@@ -891,6 +892,7 @@ mod test {
         let tmp_dir = TempDir::new().unwrap();
         let repo_path = tmp_dir.path();
         {
+            git_wrapper::setup_test_author();
             let repo = Repository::create(repo_path).expect("Created repository");
             let readme = repo_path.join("README.md");
             std::fs::File::create(&readme).unwrap();
